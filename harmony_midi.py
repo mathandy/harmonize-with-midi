@@ -3,6 +3,7 @@
 not contain accidental notes.  If an acidental is encountered, the harmony will
 be P8 or -P8."""
 
+from __future__ import print_function
 import music21 as m21
 import os
 def parentdir(path_, n=1):
@@ -11,11 +12,15 @@ def parentdir(path_, n=1):
     return path_
 
 KEY = ''
-INTERVAL = 3  # can be -7, -6, ..., -1, 1, 2, ..., or 7
-FIN = os.path.join(os.path.dirname(__file__), 'test.mid')
-FOUT = os.path.join(os.path.dirname(__file__), 'test_harmony.mid')
+INTERVAL = -5  # can be -7, -6, ..., -1, 1, 2, ..., or 7
+# FIN = os.path.join(os.path.dirname(__file__), 'test.mid')
+# FOUT = os.path.join(os.path.dirname(__file__), 'test_harmony.mid')
+FIN = os.path.join(os.path.dirname(__file__), 'lightning-bugs-midi-track.mid')
+FOUT = os.path.join(os.path.dirname(__file__), 'lightning-bugs-midi-track_harmony_' + str(INTERVAL) +'.mid')
 FIX_OCTAVE = True  # use to retain the octave 
 
+
+m21.defaults.ticksPerQuarter = 1024*16
 
 def sgn(x):
     return cmp(x, 0)
@@ -51,21 +56,26 @@ def harmonize_pitch_in_place(p, interval, key, fix_octave=False):
 
 
 # Parse input and user args
-score = m21.converter.parse(FIN)
+mf = m21.midi.MidiFile()
+mf.open(FIN)
+mf.read()
+mf.close()
+score = m21.midi.translate.midiFileToStream(mf, quantizePost=False)
+# score = m21.converter.parse(FIN)
 if not KEY:
     try:
         key = score.analyze('key')
     except:
-        raise Exception("Havin difficulty determining key.  "
+        raise Exception("Having difficulty determining key.  "
                         "Please specify a key.")
 else:
-    key = KEY
-
+    key = m21.key.Key(KEY)
+print("Using key:", key)
 
 # Harmonize the score
 for part in score.parts:
     for p in part.pitches:
-        # print p
+        print(p, end=' -> ')
         # print ''
         # score.show('t')
         harmonize_pitch_in_place(p, interval=INTERVAL, 
@@ -74,7 +84,7 @@ for part in score.parts:
         # print ''
         # score.show('t')
         # print ''
-        # print p
+        print(p)
         # raw_input()
 
 m = m21.midi.translate.streamToMidiFile(score)
